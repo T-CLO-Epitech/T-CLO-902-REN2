@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     ports:
       - "8018:8081"
+      - "8019:8082"
 
     volumes:
       - nexus-data:/nexus-data
