@@ -1,0 +1,11 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for Join_Cluster
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Join the Kubernetes cluster
+  ansible.builtin.command:
+    cmd: "{{ hostvars[groups['kube1'][0]]['kubeadm_join_command'] }}"
+    creates: /etc/kubernetes/kubelet.conf
