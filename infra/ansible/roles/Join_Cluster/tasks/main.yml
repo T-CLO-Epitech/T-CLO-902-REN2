@@ -9,3 +9,4 @@
   ansible.builtin.command:
     cmd: "{{ hostvars[groups['kube1'][0]]['kubeadm_join_command'] }}"
     creates: /etc/kubernetes/kubelet.conf
+

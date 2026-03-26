@@ -42,3 +42,10 @@
 - name: Store join command as fact
   ansible.builtin.set_fact:
     kubeadm_join_command: "{{ join_command.stdout }}"
+
+- name: Label all nodes
+  ansible.builtin.command:
+    cmd: "kubectl label nodes {{ hostvars[item]['ansible_facts']['fqdn'] }} role={{ hostvars[item]['server_role'] }} --overwrite"
+  environment:
+    KUBECONFIG: /home/ec2-user/.kube/config
+  loop: "{{ groups['all'] }}"
