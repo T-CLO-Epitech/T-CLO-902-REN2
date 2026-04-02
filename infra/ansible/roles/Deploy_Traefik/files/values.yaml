@@ -1,6 +1,12 @@
 nodeSelector:
   role: ingress
 
+tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "ingress"
+    effect: "NoSchedule"
+
 hostNetwork: true
 
 service:

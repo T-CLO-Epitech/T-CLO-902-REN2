@@ -49,3 +49,11 @@
   environment:
     KUBECONFIG: /home/ec2-user/.kube/config
   loop: "{{ groups['all'] }}"
+
+- name: Taint nodes
+  ansible.builtin.command:
+    cmd: "kubectl taint nodes {{ hostvars[item]['ansible_nodename'] }} role={{ hostvars[item]['server_role'] }}:NoSchedule --overwrite"
+  environment:
+    KUBECONFIG: /home/ec2-user/.kube/config
+  loop: "{{ groups['all'] }}"
+  when: hostvars[item]['server_role'] != 'kube1'
