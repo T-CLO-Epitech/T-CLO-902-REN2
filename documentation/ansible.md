@@ -17,85 +17,76 @@
 </div>
 
 ---
+
 ## 📖 À propos
 
-Nexus Repository Manager est utilisé dans le projet KubeQuest comme **registry privé** pour :
+Ce playbook Ansible automatise le déploiement complet d'un cluster Kubernetes en trois étapes :
 
-- Stocker les **images Docker** de nos applications
+- Installation de **containerd**, **kubeadm**, **kubelet** et **kubectl** sur tous les nœuds
+- Initialisation du **nœud master** (kube1)
+- Jonction des **nœuds workers** (kube2, monitoring, ingress) au cluster
 
 ---
+
+## 🏗️ Architecture
+
+| Hôte | Rôle | Description |
+|------|------|-------------|
+| `kube1` | Master | Nœud control plane du cluster |
+| `kube2` | Worker | Nœud worker applicatif |
+| `monitoring` | Worker | Nœud dédié au monitoring (Prometheus/Grafana) |
+| `ingress` | Worker | Nœud dédié à l'Ingress Controller (Nginx) |
+
+---
+
+## 📁 Structure des rôles
+
+| Rôle | Cible | Description |
+|------|-------|-------------|
+| `Deploy_Containerd` | Tous les nœuds | Installe et configure le runtime containerd |
+| `Deploy_Kube` | Tous les nœuds | Installe kubeadm, kubelet et kubectl |
+| `Init_Kube` | Master uniquement | Initialise le cluster avec `kubeadm init` |
+| `Join_Cluster` | Workers uniquement | Joint les workers au cluster via le token du master |
+
+---
+
 ## 🚀 Déploiement
 
-### Lancement
+### Prérequis
 
+- Ansible installé sur la machine de contrôle
+- Accès SSH configuré vers tous les nœuds
+- Fichier `inventory` correctement renseigné
+
+### Lancement du playbook
 ```bash
- docker compose -f docker-compose-nexus.yml up -d
+ansible-playbook -i inventory playbook.yml
 ```
 
-Vérifier que le conteneur est bien démarré :
+### Vérifier le cluster après déploiement
 
+Depuis le nœud master (`kube1`) :
 ```bash
- docker compose -f docker-compose-nexus.yml ps
-```
----
-
-## 🔑 Accès à l'interface
-
-### 1. Récupérer le mot de passe admin
-
-```bash
- docker exec nexus cat /nexus-data/admin.password
+kubectl get nodes
 ```
 
-### 2. Première connexion
-
-- Accéder à l'interface : `http://51.178.52.51:8018`
-- Login : `admin`
-- Mot de passe : celui récupéré à l'étape précédente
-- Nexus impose un **changement de mot de passe** à la première connexion
-- Nouveau mot de passe sur Infiscale
-
----
-
-## 🗂️ Création des repositories
-
-### Docker Hosted (port 8019)
-
-Repository pour stocker nos images Docker.
-
-> **Settings** → **Repositories** → **Create repository** → **docker (hosted)**
-
-| Paramètre | Valeur |
-|-----------|--------|
-| Name      | `docker-hosted` | 
-| HTTP Port | `8082` |
-| Enable Docker V1 API | ❌ |
-| Blob store | `default` |
-| Deployment policy | `Allow redeploy` |
-
-![Nexus create repositories](./images/Nexus.png)
+Résultat attendu :
+```
+NAME         STATUS   ROLES           AGE   VERSION
+kube1        Ready    control-plane   XXm   v1.XX.X
+kube2        Ready    <none>          XXm   v1.XX.X
+monitoring   Ready    <none>          XXm   v1.XX.X
+ingress      Ready    <none>          XXm   v1.XX.X
+```
 
 ---
 
-## 🐳 Utilisation avec Docker
-
-### Se connecter au registry
-
-```bash
- docker login 51.178.52.51:8019
+## 🔄 Ordre d'exécution
 ```
-
-### Taguer et pousser une image
-
-```bash
- docker tag mon-app:latest 51.178.52.51:8019/mon-app:1.0.0
- docker push 51.178.52.51:8019/mon-app:1.0.0
-```
-
-### Puller une image
-
-```bash
-docker pull 51.178.52.51:8019/mon-app:1.0.0
+1. Deploy_Containerd  →  tous les nœuds
+2. Deploy_Kube        →  tous les nœuds
+3. Init_Kube          →  kube1 (master)
+4. Join_Cluster       →  kube2, monitoring, ingress (workers)
 ```
 
 ---
