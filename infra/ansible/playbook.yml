@@ -17,3 +17,12 @@
   become: true
   roles:
     - Join_Cluster
+
+- name: Deploy Services
+  hosts: kube1
+  become: true
+  tags: services
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  roles:
+    - Deploy_Traefik
