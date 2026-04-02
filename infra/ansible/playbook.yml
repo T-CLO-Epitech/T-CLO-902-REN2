@@ -1,20 +1,23 @@
 ---
-- name : Install containerd, Kubeadm, Kubelet and Kubectl
-  hosts:  all
+- name: Install containerd, Kubeadm, Kubelet and Kubectl
+  hosts: all
   become: true
+  tags: setup
   roles:
     - Deploy_Containerd
     - Deploy_Kube
 
-- name : Configure Master Node
-  hosts:  kube1
+- name: Configure Master Node
+  hosts: kube1
   become: true
+  tags: setup
   roles:
     - Init_Kube
 
 - name: Join Worker Nodes to Cluster
-  hosts:  kube2 monitoring ingress
+  hosts: kube2 monitoring ingress
   become: true
+  tags: setup
   roles:
     - Join_Cluster
 
