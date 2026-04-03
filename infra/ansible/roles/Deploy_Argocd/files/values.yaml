@@ -8,6 +8,7 @@ tolerations:
     effect: "NoSchedule"
 
 server:
-  insecure: true
   ingress:
     enabled: false
+  extraArgs:
+    - --insecure
