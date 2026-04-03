@@ -24,6 +24,16 @@
     src: ingressroute.yaml
     dest: /tmp/argocd-ingressroute.yaml
 
+- name: Copy AppProject manifest
+  copy:
+    src: app-project.yaml
+    dest: /tmp/argocd-appproject.yaml
+
+- name: Copy Application manifest
+  copy:
+    src: app-application.yaml
+    dest: /tmp/argocd-application.yaml
+
 - name: Add ArgoCD Helm repo
   kubernetes.core.helm_repository:
     name: argocd
@@ -55,3 +65,13 @@
 - name: Display ArgoCD admin password
   debug:
     msg: "ArgoCD admin password: {{ argocd_secret.resources[0].data.password | b64decode }}"
+
+- name: Apply AppProject
+  kubernetes.core.k8s:
+    src: /tmp/argocd-appproject.yaml
+    state: present
+
+- name: Apply Application
+  kubernetes.core.k8s:
+    src: /tmp/argocd-application.yaml
+    state: present
