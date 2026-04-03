@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: app
+  namespace: argocd
+spec:
+  description: Simple applications
+
+  sourceRepos:
+    - 'https://github.com/T-CLO-Epitech/T-CLO-902-REN2-APP'
+
+  destinations:
+    - namespace: app
+      server: https://kubernetes.default.svc
+
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
