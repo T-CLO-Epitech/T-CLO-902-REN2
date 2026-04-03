@@ -29,6 +29,7 @@
     KUBECONFIG: /etc/kubernetes/admin.conf
   roles:
     - Deploy_Traefik
+    - Deploy_Argocd
 
 - name: Deploy ArgoCD
   hosts: kube1
