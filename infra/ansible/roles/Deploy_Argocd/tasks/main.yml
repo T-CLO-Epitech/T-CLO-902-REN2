@@ -1,0 +1,57 @@
+---
+- name: Ensure pip is available
+  package:
+    name: python3-pip
+    state: present
+  become: true
+ 
+- name: Install required Python libraries
+  pip:
+    name:
+      - kubernetes
+      - PyYAML
+      - jsonpatch
+    executable: /usr/bin/pip3.9
+  become: true
+
+- name: Copy ArgoCD values
+  copy:
+    src: values.yaml
+    dest: /tmp/argocd-values.yaml
+
+- name: Copy ArgoCD IngressRoute
+  copy:
+    src: ingressroute.yaml
+    dest: /tmp/argocd-ingressroute.yaml
+
+- name: Add ArgoCD Helm repo
+  kubernetes.core.helm_repository:
+    name: argocd
+    repo_url: https://argoproj.github.io/argo-helm
+
+
+- name: Deploy ArgoCD
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: argocd/argo-cd
+    release_namespace: argocd
+    create_namespace: true
+    values_files:
+      - /tmp/argocd-values.yaml
+    wait: true
+
+- name: Apply ArgoCD IngressRoute
+  kubernetes.core.k8s:
+    src: /tmp/argocd-ingressroute.yaml
+    state: present
+
+- name: Get ArgoCD admin password
+  kubernetes.core.k8s_info:
+    kind: Secret
+    namespace: argocd
+    name: argocd-initial-admin-secret
+  register: argocd_secret
+
+- name: Display ArgoCD admin password
+  debug:
+    msg: "ArgoCD admin password: {{ argocd_secret.resources[0].data.password | b64decode }}"
