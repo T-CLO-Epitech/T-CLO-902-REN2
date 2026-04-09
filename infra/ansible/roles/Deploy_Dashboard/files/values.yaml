@@ -1,10 +1,10 @@
 nodeSelector:
-  role: kube2
+  role: monitoring
 
 tolerations:
   - key: "role"
     operator: "Equal"
-    value: "kube2"
+    value: "monitoring"
     effect: "NoSchedule"
 
 ingress:
