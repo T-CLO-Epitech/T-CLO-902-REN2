@@ -21,6 +21,13 @@
   roles:
     - Join_Cluster
 
+- name: Configure Registry on all nodes
+  hosts: all
+  become: true
+  tags: update
+  roles:
+    - Config_Registry
+
 - name: Deploy Services
   hosts: kube1
   become: true

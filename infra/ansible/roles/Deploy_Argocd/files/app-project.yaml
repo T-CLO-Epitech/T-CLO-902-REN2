@@ -5,14 +5,12 @@ metadata:
   namespace: argocd
 spec:
   description: Simple applications
-
   sourceRepos:
     - 'https://github.com/T-CLO-Epitech/T-CLO-902-REN2-APP'
-
+    - 'https://github.com/T-CLO-Epitech/T-CLO-902-REN2'
   destinations:
     - namespace: app
       server: https://kubernetes.default.svc
-
   clusterResourceWhitelist:
     - group: '*'
       kind: '*'

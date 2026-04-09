@@ -8,13 +8,19 @@ spec:
   destination:
     namespace: app
     server: https://kubernetes.default.svc
-  source:
-    repoURL: https://github.com/T-CLO-Epitech/T-CLO-902-REN2-APP
-    targetRevision: main
-    path: sample-app-master/helm/app
-    helm:
-      valueFiles:
-        - values.yaml
+  sources:
+    - repoURL: https://github.com/T-CLO-Epitech/T-CLO-902-REN2
+      targetRevision: 11-mise-en-place-des-secrets-argocd
+      path: infra/kube/app/argocd/secrets
+      directory:
+        recurse: false
+
+    - repoURL: https://github.com/T-CLO-Epitech/T-CLO-902-REN2-APP
+      targetRevision: main
+      path: sample-app-master/helm/app
+      helm:
+        valueFiles:
+          - values.yaml
   syncPolicy:
     automated:
       prune: true
