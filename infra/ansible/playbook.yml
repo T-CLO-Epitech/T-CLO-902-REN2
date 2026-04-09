@@ -57,3 +57,21 @@
     - Delete_Traefik
     - Delete_Argocd
     - Delete_App
+
+- name: Deploy Dashboard
+  hosts: kube1
+  become: true
+  tags: dashboard
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  roles:
+    - Deploy_Dashboard
+
+- name: Delete Dashboard
+  hosts: kube1
+  become: true
+  tags: delete
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  roles:
+    - Delete_Dashboard

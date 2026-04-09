@@ -1,0 +1,37 @@
+---
+- name: Install Helm
+  shell: |
+    curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  args:
+    creates: /usr/local/bin/helm
+  become: true
+
+- name: Copy Headlamp values
+  copy:
+    src: values.yaml
+    dest: /tmp/headlamp-values.yaml
+
+- name: Copy Headlamp IngressRoute
+  copy:
+    src: ingressroute.yaml
+    dest: /tmp/headlamp-ingressroute.yaml
+
+- name: Add Headlamp Helm repo
+  kubernetes.core.helm_repository:
+    name: headlamp
+    repo_url: https://kubernetes-sigs.github.io/headlamp/
+
+- name: Deploy Headlamp Dashboard
+  kubernetes.core.helm:
+    name: headlamp
+    chart_ref: headlamp/headlamp
+    release_namespace: dashboard
+    create_namespace: true
+    values_files:
+      - /tmp/headlamp-values.yaml
+    wait: true
+
+- name: Apply Headlamp IngressRoute
+  kubernetes.core.k8s:
+    src: /tmp/headlamp-ingressroute.yaml
+    state: present

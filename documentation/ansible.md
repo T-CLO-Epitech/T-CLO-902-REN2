@@ -26,7 +26,7 @@ Ce playbook Ansible automatise le déploiement complet d'un cluster Kubernetes e
 - Initialisation du **nœud master** (kube1) avec **Calico** comme CNI
 - Jonction des **nœuds workers** (kube2, monitoring, ingress) au cluster
 - Attribution des **labels** et **taints** sur chaque nœud
-- Installation de **Helm** et déploiement des services (**Traefik**, **ArgoCD**)
+- Installation de **Helm** et déploiement des services (**Traefik**, **ArgoCD**, **Headlamp**)
 
 ---
 
@@ -53,6 +53,10 @@ Les **taints** garantissent que seuls les pods avec les **tolerations** correspo
 | `Join_Cluster` | Workers uniquement | `setup` | Joint les workers au cluster via le token du master |
 | `Deploy_Traefik` | Master uniquement | `services` | Déploie Traefik via Helm sur le nœud ingress |
 | `Deploy_ArgoCD` | Master uniquement | `services` | Déploie ArgoCD via Helm sur le nœud kube2 |
+| `Deploy_Dashboard` | Master uniquement | `services` | Déploie Headlamp via Helm sur le nœud kube2 |
+| `Delete_Traefik` | Master uniquement | `delete` | Désinstalle Traefik et supprime le namespace |
+| `Delete_Argocd` | Master uniquement | `delete` | Désinstalle ArgoCD et supprime le namespace |
+| `Delete_Dashboard` | Master uniquement | `delete` | Désinstalle Headlamp et supprime le namespace |
 
 > **Note** : Les rôles de déploiement de services s'exécutent depuis `kube1` (le master) car c'est là que se trouve le kubeconfig et l'API Server. Le `nodeSelector` dans les values Helm détermine sur quel nœud les pods seront placés.
 
@@ -110,6 +114,7 @@ Le fichier `inventory.ini` doit définir les variables `server_role` pour chaque
   roles:
     - Deploy_Traefik
     - Deploy_ArgoCD
+    - Deploy_Dashboard
 ```
 
 ---
@@ -210,7 +215,8 @@ ip-10-1-23-52.eu-west-1.compute.internal    Ready    <none>          v1.31.14   
 3. Init_Kube          →  kube1 (master) — init cluster + Calico + labels + taints
 4. Join_Cluster       →  kube2, monitoring, ingress (workers)
 6. Deploy_Traefik     →  kube1 → pods sur nœud ingress
-7. Deploy_ArgoCD      →  kube1 → pods sur nœud kube2
+7. Deploy_ArgoCD      →  kube1 → pods sur nœud monitoring
+8. Deploy_Dashboard   →  kube1 → pods sur nœud kube2 (Headlamp)
 ```
 
 ---
@@ -220,13 +226,14 @@ ip-10-1-23-52.eu-west-1.compute.internal    Ready    <none>          v1.31.14   
 Ajouter dans le fichier hosts local (`/etc/hosts` ou `C:\Windows\System32\drivers\etc\hosts`) :
 
 ```
-<IP_PUBLIQUE_INGRESS>  traefik.kubequest.local argocd.kubequest.local
+<IP_PUBLIQUE_INGRESS>  traefik.kubequest.local argocd.kubequest.local headlamp.kubequest.local
 ```
 
 | Service | URL | Identifiants |
 |---------|-----|--------------|
 | Dashboard Traefik | `http://traefik.kubequest.local/dashboard/` | — |
 | ArgoCD | `http://argocd.kubequest.local` | `admin` / voir sortie Ansible |
+| Headlamp | `http://headlamp.kubequest.local` | Token service account (voir doc Headlamp) |
 
 ---
 
