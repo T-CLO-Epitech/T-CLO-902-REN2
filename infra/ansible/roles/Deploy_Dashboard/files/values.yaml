@@ -1,0 +1,11 @@
+nodeSelector:
+  role: kube2
+
+tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "kube2"
+    effect: "NoSchedule"
+
+ingress:
+  enabled: false
