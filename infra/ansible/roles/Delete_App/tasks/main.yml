@@ -1,0 +1,9 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for Delete_App
+
+- name: Delete app namespace
+  kubernetes.core.k8s:
+    kind: Namespace
+    name: app
+    state: absent

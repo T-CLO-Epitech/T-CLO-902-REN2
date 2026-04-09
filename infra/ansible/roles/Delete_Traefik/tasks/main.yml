@@ -1,0 +1,16 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for Delete_Traefik
+
+- name: Uninstall Traefik Helm release
+  kubernetes.core.helm:
+    name: traefik
+    release_namespace: traefik
+    state: absent
+    wait: true
+
+- name: Delete Traefik namespace
+  kubernetes.core.k8s:
+    kind: Namespace
+    name: traefik
+    state: absent
