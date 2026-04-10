@@ -21,6 +21,24 @@
   roles:
     - Join_Cluster
 
+- name: Normalize node taints (keep kube2 schedulable)
+  hosts: kube1
+  become: true
+  tags:
+    - setup
+    - taints
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  roles:
+    - Normalize_Taints
+
+- name: Bootstrap Monitoring Node (directories, time sync)
+  hosts: monitoring
+  become: true
+  tags: setup
+  roles:
+    - Bootstrap_Monitoring
+
 - name: Deploy Services
   hosts: kube1
   become: true
@@ -39,3 +57,12 @@
     KUBECONFIG: /etc/kubernetes/admin.conf
   roles:
     - Deploy_Argocd
+
+- name: Deploy Observability stack (kube-prometheus-stack + Loki)
+  hosts: kube1
+  become: true
+  tags: monitoring
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  roles:
+    - Deploy_Observability

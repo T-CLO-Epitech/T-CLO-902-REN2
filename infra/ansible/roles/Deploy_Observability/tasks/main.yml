@@ -1,0 +1,128 @@
+---
+- name: Detect pip executable (Amazon Linux often uses pip3.9)
+  ansible.builtin.stat:
+    path: /usr/bin/pip3.9
+  register: pip39
+
+- name: Set pip executable fact
+  ansible.builtin.set_fact:
+    observability_pip_executable: "{{ '/usr/bin/pip3.9' if pip39.stat.exists else 'pip3' }}"
+
+- name: Ensure pip is available (kube1)
+  ansible.builtin.package:
+    name: python3-pip
+    state: present
+  become: true
+ 
+- name: Install Python libs required by kubernetes.core modules (kube1)
+  ansible.builtin.pip:
+    name:
+      - kubernetes
+      - PyYAML
+      - jsonpatch
+    executable: "{{ observability_pip_executable }}"
+  become: true
+
+- name: Copy kube-prometheus-stack values
+  ansible.builtin.copy:
+    src: kube-prometheus-stack-values.yaml
+    dest: /tmp/kube-prometheus-stack-values.yaml
+    mode: "0644"
+
+- name: Copy Loki stack values
+  ansible.builtin.copy:
+    src: loki-stack-values.yaml
+    dest: /tmp/loki-stack-values.yaml
+    mode: "0644"
+
+- name: Copy Grafana IngressRoute
+  ansible.builtin.copy:
+    src: grafana-ingressroute.yaml
+    dest: /tmp/grafana-ingressroute.yaml
+    mode: "0644"
+
+- name: Add prometheus-community Helm repo
+  kubernetes.core.helm_repository:
+    name: prometheus-community
+    repo_url: https://prometheus-community.github.io/helm-charts
+
+- name: Add Grafana Helm repo
+  kubernetes.core.helm_repository:
+    name: grafana
+    repo_url: https://grafana.github.io/helm-charts
+
+- name: Deploy kube-prometheus-stack (Prometheus + Grafana)
+  kubernetes.core.helm:
+    name: kps
+    chart_ref: prometheus-community/kube-prometheus-stack
+    release_namespace: "{{ observability_namespace }}"
+    create_namespace: true
+    values_files:
+      - /tmp/kube-prometheus-stack-values.yaml
+    wait: true
+
+- name: Deploy Loki stack (Loki + Promtail)
+  kubernetes.core.helm:
+    name: loki
+    chart_ref: grafana/loki-stack
+    release_namespace: "{{ observability_namespace }}"
+    create_namespace: true
+    values_files:
+      - /tmp/loki-stack-values.yaml
+    wait: true
+
+- name: Expose Grafana via Traefik (IngressRoute)
+  kubernetes.core.k8s:
+    src: /tmp/grafana-ingressroute.yaml
+    state: present
+
+- name: Get Grafana secret by expected name
+  kubernetes.core.k8s_info:
+    kind: Secret
+    namespace: "{{ observability_namespace }}"
+    name: kps-grafana
+  register: grafana_secret_by_name
+
+- name: Get Grafana secret by labels (fallback)
+  kubernetes.core.k8s_info:
+    kind: Secret
+    namespace: "{{ observability_namespace }}"
+    label_selectors:
+      - app.kubernetes.io/instance=kps
+      - app.kubernetes.io/name=grafana
+  register: grafana_secret_by_label
+  when: grafana_secret_by_name.resources | length == 0
+
+- name: Set Grafana secret resource
+  ansible.builtin.set_fact:
+    grafana_secret_resource: >-
+      {{
+        (grafana_secret_by_name.resources[0])
+        if (grafana_secret_by_name.resources | length > 0)
+        else (
+          (grafana_secret_by_label.resources[0])
+          if (grafana_secret_by_label is defined and (grafana_secret_by_label.resources | length > 0))
+          else {}
+        )
+      }}
+
+- name: Display Grafana credentials (if available)
+  ansible.builtin.debug:
+    msg:
+      - "Grafana URL: http://{{ observability_grafana_host }}"
+      - "Grafana user: admin"
+      - "Grafana password: {{ grafana_secret_resource.data['admin-password'] | b64decode }}"
+  when:
+    - grafana_secret_resource is mapping
+    - grafana_secret_resource | length > 0
+    - grafana_secret_resource.data is defined
+    - grafana_secret_resource.data['admin-password'] is defined
+
+- name: Display Grafana access instructions (secret not ready yet)
+  ansible.builtin.debug:
+    msg:
+      - "Grafana secret not found yet in namespace '{{ observability_namespace }}'."
+      - "Check pods: kubectl get pods -n {{ observability_namespace }}"
+      - "Try later: kubectl -n {{ observability_namespace }} get secret kps-grafana -o jsonpath=\"{.data.admin-password}\" | base64 -d; echo"
+  when:
+    - grafana_secret_resource is not mapping or grafana_secret_resource | length == 0 or grafana_secret_resource.data is not defined or grafana_secret_resource.data['admin-password'] is not defined

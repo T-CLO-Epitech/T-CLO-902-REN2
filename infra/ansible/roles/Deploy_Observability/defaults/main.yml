@@ -1,0 +1,12 @@
+observability_namespace: monitoring
+
+observability_grafana_host: grafana.kubequest.local
+
+observability_node_selector:
+  role: monitoring
+
+observability_tolerations:
+  - key: "role"
+    operator: "Equal"
+    value: "monitoring"
+    effect: "NoSchedule"

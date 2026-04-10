@@ -1,0 +1,77 @@
+# kube-prometheus-stack (metrics) + Grafana
+#
+# Important:
+# - This assumes your nodes are labeled with `role=<server_role>`
+#   and tainted with `role=<server_role>:NoSchedule` (except kube1),
+#   like in this repo's Init_Kube role.
+# - We pin core components on the `monitoring` node.
+
+grafana:
+  enabled: true
+  service:
+    type: ClusterIP
+  nodeSelector:
+    role: monitoring
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki.monitoring.svc.cluster.local:3100
+      isDefault: false
+
+prometheus:
+  prometheusSpec:
+    nodeSelector:
+      role: monitoring
+    tolerations:
+      - key: "role"
+        operator: "Equal"
+        value: "monitoring"
+        effect: "NoSchedule"
+
+alertmanager:
+  alertmanagerSpec:
+    nodeSelector:
+      role: monitoring
+    tolerations:
+      - key: "role"
+        operator: "Equal"
+        value: "monitoring"
+        effect: "NoSchedule"
+
+prometheusOperator:
+  nodeSelector:
+    role: monitoring
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+
+kube-state-metrics:
+  nodeSelector:
+    role: monitoring
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+
+prometheus-node-exporter:
+  # node-exporter is a DaemonSet (one Pod per node). Your nodes are tainted,
+  # so it needs tolerations to run everywhere.
+  tolerations:
+    - key: "role"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"

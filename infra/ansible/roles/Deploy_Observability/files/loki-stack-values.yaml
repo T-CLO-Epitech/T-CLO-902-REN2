@@ -1,0 +1,32 @@
+# Loki stack (logs): Loki + Promtail (agent)
+#
+# We disable Grafana here because Grafana is already installed by kube-prometheus-stack.
+
+grafana:
+  enabled: false
+
+loki:
+  enabled: true
+  service:
+    type: ClusterIP
+  nodeSelector:
+    role: monitoring
+  tolerations:
+    - key: "role"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+
+promtail:
+  enabled: true
+  # DaemonSet: should run on every node to ship container logs.
+  tolerations:
+    - key: "role"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"

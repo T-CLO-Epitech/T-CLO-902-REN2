@@ -1,0 +1,17 @@
+---
+- name: List nodes with role=kube2
+  ansible.builtin.command:
+    cmd: >-
+      kubectl get nodes -l role=kube2
+      -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'
+  register: kube2_nodes
+  changed_when: false
+
+- name: Remove kube2 NoSchedule taint (keeps kube2 schedulable for generic workloads and Helm hook jobs)
+  ansible.builtin.command:
+    cmd: kubectl taint nodes {{ item }} role=kube2:NoSchedule-
+  loop: "{{ kube2_nodes.stdout_lines }}"
+  register: untaint_results
+  failed_when: false
+  changed_when: >
+    (untaint_results.results | default([]) | selectattr('stdout', 'search', 'untainted') | list | length) > 0
