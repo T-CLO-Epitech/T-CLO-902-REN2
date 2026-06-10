@@ -31,15 +31,15 @@ ArgoCD est utilisé dans le projet KubeQuest comme outil de **GitOps** pour :
 
 ## 🏗️ Architecture
 
-```
-Internet → Traefik (nœud ingress) → IngressRoute → ArgoCD Server (nœud kube2)
-                                                         ↓
-                                                    Dépôt Git ←→ Cluster K8s
+```text
+Internet / DNS → Load Balancer externe → Traefik → IngressRoute → ArgoCD Server
+                                                              ↓
+                                                         Dépôt Git ←→ Cluster K8s
 ```
 
 | Composant | Détail |
 |-----------|--------|
-| Nœud | VM `kube2` (label `role=kube2`) |
+| Nœud | Pods planifiables sur n'importe quel worker `workload=general` |
 | Namespace | `argocd` |
 | Helm chart | `argo/argo-cd` |
 | Exposition | IngressRoute Traefik sur `argocd.kubequest.local` |
@@ -57,7 +57,7 @@ Ajouter dans le fichier hosts de votre machine :
 - **Windows** : `C:\Windows\System32\drivers\etc\hosts`
 
 ```
-<IP_PUBLIQUE_INGRESS>  argocd.kubequest.local
+<IP_OU_DNS_LB>  argocd.kubequest.local
 ```
 
 ### Première connexion
@@ -148,7 +148,7 @@ kubectl apply -f application.yaml
 kubectl get pods -n argocd -o wide
 ```
 
-Tous les pods doivent être sur le nœud `kube2`.
+Les pods ne doivent plus être épinglés à un worker dédié. Ils doivent pouvoir être planifiés sur n'importe quel worker généraliste.
 
 ### Vérifier l'accès
 

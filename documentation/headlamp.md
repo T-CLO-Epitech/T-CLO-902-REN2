@@ -23,19 +23,19 @@ Headlamp est utilisé dans le projet KubeQuest comme **dashboard Kubernetes** po
 - Naviguer dans les namespaces et les configurations
 - Accéder à l'interface sans installer kubectl en local
 
-Headlamp est déployé via **Helm** sur le nœud `kube2` et exposé via une **IngressRoute Traefik**.
+Headlamp est déployé via **Helm** sur les workers généralistes et exposé via une **IngressRoute Traefik**.
 
 ---
 
 ## 🏗️ Architecture
 
-```
-Internet → Traefik (nœud ingress) → IngressRoute → Headlamp (nœud kube2)
+```text
+Internet / DNS → Load Balancer externe → Traefik → IngressRoute → Headlamp
 ```
 
 | Composant | Détail |
 |-----------|--------|
-| Nœud | VM `kube2` (label `role=kube2`) |
+| Nœud | Pods planifiables sur n'importe quel worker `workload=general` |
 | Namespace | `dashboard` |
 | Helm chart | `headlamp/headlamp` |
 | Exposition | IngressRoute Traefik sur `headlamp.kubequest.local` |
@@ -101,22 +101,12 @@ roles/Deploy_Dashboard/
 ### Values Helm (`files/values.yaml`)
 
 ```yaml
-nodeSelector:
-  role: kube2
-
-tolerations:
-  - key: "role"
-    operator: "Equal"
-    value: "kube2"
-    effect: "NoSchedule"
-
 ingress:
   enabled: false
 ```
 
 **Points clés de la configuration :**
 
-- `nodeSelector` + `tolerations` — garantit que Headlamp tourne uniquement sur le nœud `kube2`
 - `ingress.enabled: false` — l'exposition est gérée par une IngressRoute Traefik dédiée
 
 ### IngressRoute (`files/ingressroute.yaml`)
@@ -150,7 +140,7 @@ Ajouter dans le fichier hosts de votre machine :
 - **Windows** : `C:\Windows\System32\drivers\etc\hosts`
 
 ```
-<IP_PUBLIQUE_INGRESS>  headlamp.kubequest.local
+<IP_OU_DNS_LB>  headlamp.kubequest.local
 ```
 
 ### URL d'accès
@@ -223,7 +213,7 @@ Résultat attendu :
 
 ```
 NAME                        READY   STATUS    NODE
-headlamp-xxxxx-xxxxx        1/1     Running   ip-10-1-23-169.eu-west-1.compute.internal
+headlamp-xxxxx-xxxxx        1/1     Running   ip-10-1-23-xxx.eu-west-1.compute.internal
 ```
 
 ### Vérifier le service et l'IngressRoute
@@ -237,7 +227,7 @@ kubectl get ingressroute -n dashboard
 
 ```bash
 # Depuis l'extérieur
-curl -H "Host: headlamp.kubequest.local" http://<IP_PUBLIQUE_INGRESS>
+curl -H "Host: headlamp.kubequest.local" http://<IP_OU_DNS_LB>
 
 # Depuis le cluster
 curl http://headlamp.dashboard.svc.cluster.local
