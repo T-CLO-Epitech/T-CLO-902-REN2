@@ -45,15 +45,21 @@
 
 - name: Label all nodes
   ansible.builtin.command:
-    cmd: "kubectl label nodes {{ hostvars[item]['ansible_facts']['fqdn'] }} role={{ hostvars[item]['server_role'] }} --overwrite"
+    cmd: >-
+      kubectl label nodes {{ hostvars[item]['ansible_facts']['fqdn'] }}
+      workload={{ 'control-plane' if hostvars[item]['server_role'] == 'control-plane' else 'general' }}
+      --overwrite
   environment:
     KUBECONFIG: /home/ec2-user/.kube/config
   loop: "{{ groups['all'] }}"
 
-- name: Taint nodes
+- name: Remove legacy worker taints
   ansible.builtin.command:
-    cmd: "kubectl taint nodes {{ hostvars[item]['ansible_nodename'] }} role={{ hostvars[item]['server_role'] }}:NoSchedule --overwrite"
+    cmd: "kubectl taint nodes {{ hostvars[item]['ansible_nodename'] }} role-"
   environment:
     KUBECONFIG: /home/ec2-user/.kube/config
   loop: "{{ groups['all'] }}"
-  when: hostvars[item]['server_role'] != 'kube1'
+  when: hostvars[item]['server_role'] == 'worker'
+  register: untaint_result
+  failed_when: untaint_result.rc != 0 and "not found" not in (untaint_result.stderr | default(""))
+  changed_when: "'untainted' in (untaint_result.stdout | default(''))"

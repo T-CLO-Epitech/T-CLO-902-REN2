@@ -7,10 +7,7 @@
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Ansible](https://img.shields.io/badge/Ansible-EE0000?style=for-the-badge&logo=ansible&logoColor=white)
 ![Helm](https://img.shields.io/badge/Helm-0F1689?style=for-the-badge&logo=helm&logoColor=white)
-![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)
-![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana&logoColor=white)
 ![Traefik](https://img.shields.io/badge/Traefik-24A1C1?style=for-the-badge&logo=traefikproxy&logoColor=white)
-![ArgoCD](https://img.shields.io/badge/ArgoCD-EF7B4D?style=for-the-badge&logo=argo&logoColor=white)
 
 **Automatisation et déploiement d'infrastructure cloud sur AWS**
 
@@ -20,215 +17,135 @@
 
 ## 📖 À propos
 
-Traefik est utilisé dans le projet KubeQuest comme **Ingress Controller** pour :
+Traefik est l'**Ingress Controller** du cluster KubeQuest.
+Il reçoit le trafic via un **load balancer externe**, puis distribue les requêtes vers les services Kubernetes.
 
-- Router le trafic HTTP/HTTPS vers les services du cluster
-- Exposer les applications via des noms de domaine (IngressRoutes)
-- Fournir un **dashboard** de visualisation des routes et services
+Objectifs de cette configuration :
 
-Traefik est déployé en mode **hostNetwork** directement sur le nœud `ingress`, ce qui lui permet de binder sur les ports 80 et 443 de la VM sans passer par un NodePort.
+- éviter un point de panne unique
+- ne plus lier l'ingress à une seule VM
+- permettre à plusieurs pods Traefik de tourner sur des workers différents
 
 ---
 
 ## 🏗️ Architecture
 
-```
-Internet → IP publique VM ingress → port 80/443 → Traefik (hostNetwork) → Services K8s
+```text
+Internet / DNS
+    ↓
+Load Balancer externe
+    ↓
+NodePorts Traefik sur les workers
+    ↓
+Traefik
+    ↓
+Services Kubernetes
+    ↓
+Pods applicatifs
 ```
 
 | Composant | Détail |
 |-----------|--------|
-| Nœud | VM `ingress` (label `role=ingress`) |
-| Mode réseau | `hostNetwork: true` |
-| Ports | 80 (HTTP), 443 (HTTPS) |
+| Réplicas Traefik | `2` |
+| Service | `NodePort` |
+| Ports externes | `30080` / `30443` |
 | Déploiement | Helm chart `traefik/traefik` via Ansible |
-| Accès externe | IP publique de la VM ingress |
+| Répartition | anti-affinity sur `kubernetes.io/hostname` |
 
 ---
 
 ## 📦 Déploiement via Ansible
 
-### Rôle `Deploy_Traefik`
-
-```
-roles/Deploy_Traefik/
-├── tasks/
-│   └── main.yml
-└── files/
-    └── values.yaml
-```
-
-### Tâches (`tasks/main.yml`)
+Le rôle `Deploy_Traefik` applique des values Helm orientées résilience :
 
 ```yaml
----
-- name: Copy Traefik values
-  copy:
-    src: values.yaml
-    dest: /tmp/traefik-values.yaml
+deployment:
+  replicas: 2
 
-- name: Add Traefik Helm repo
-  kubernetes.core.helm_repository:
-    name: traefik
-    repo_url: https://traefik.github.io/charts
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: traefik
+            app.kubernetes.io/instance: traefik
+        topologyKey: kubernetes.io/hostname
 
-- name: Deploy Traefik
-  kubernetes.core.helm:
-    name: traefik
-    chart_ref: traefik/traefik
-    release_namespace: traefik
-    create_namespace: true
-    values_files:
-      - /tmp/traefik-values.yaml
-    wait: true
-```
-
-### Values Helm (`files/values.yaml`)
-
-```yaml
-nodeSelector:
-  role: ingress
-
-tolerations:
-  - key: "role"
-    operator: "Equal"
-    value: "ingress"
-    effect: "NoSchedule"
-
-hostNetwork: true
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
 
 service:
-  enabled: false
-
-securityContext:
-  capabilities:
-    add:
-      - NET_BIND_SERVICE
-    drop:
-      - ALL
-  runAsNonRoot: false
-  runAsUser: 0
-  runAsGroup: 0
-
-podSecurityContext:
-  runAsNonRoot: false
-  runAsUser: 0
-  runAsGroup: 0
+  enabled: true
+  type: NodePort
 
 ports:
   web:
     port: 80
-    hostPort: 80
+    nodePort: 30080
   websecure:
     port: 443
-    hostPort: 443
-
-ingressRoute:
-  dashboard:
-    enabled: true
-    matchRule: Host(`traefik.kubequest.local`)
-    entryPoints:
-      - web
-
-providers:
-  kubernetesIngress:
-    enabled: true
+    nodePort: 30443
 ```
-
-**Points clés de la configuration :**
-
-- `hostNetwork: true` — Traefik se bind directement sur les ports de la VM, pas besoin de NodePort ni d'iptables
-- `service.enabled: false` — pas de Service Kubernetes nécessaire en mode hostNetwork
-- `securityContext` — nécessaire pour binder sur les ports privilégiés (80/443) avec `NET_BIND_SERVICE`
-- `nodeSelector` + `tolerations` — garantit que Traefik ne tourne que sur le nœud ingress
-- `ingressRoute.dashboard` — active le dashboard Traefik accessible via le host `traefik.kubequest.local`
 
 ---
 
-## 🌐 Accès
+## 🌐 Contrat d'exposition
 
-### Configuration DNS locale
+Le load balancer externe doit pointer vers les trois workers sur :
 
-Ajouter dans le fichier hosts de votre machine :
+- `TCP 30080` pour HTTP
+- `TCP 30443` pour HTTPS
 
-- **Linux/Mac** : `/etc/hosts`
-- **Windows** : `C:\Windows\System32\drivers\etc\hosts`
+Exemple de parcours utilisateur :
 
-```
-<IP_PUBLIQUE_INGRESS>  traefik.kubequest.local 
-```
-
-### URLs d'accès
-
-| Service | URL |
-|---------|-----|
-| Dashboard Traefik | `http://traefik.kubequest.local/dashboard/` |
-
-
-> **Note** : Le `/` final est obligatoire pour le dashboard : `/dashboard/` et non `/dashboard`
-
----
-
-## 🔀 Exposer un nouveau service
-
-Pour exposer une application via Traefik, créer un **IngressRoute** :
-
-```yaml
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
-metadata:
-  name: mon-app
-  namespace: default
-spec:
-  entryPoints:
-    - web
-  routes:
-    - match: Host(`mon-app.kubequest.local`)
-      kind: Rule
-      services:
-        - name: mon-app-service
-          port: 80
-```
-
-Puis ajouter le domaine dans le fichier hosts local :
-
-```
-<IP_PUBLIQUE_INGRESS>  mon-app.kubequest.local
+```text
+app.kubequest.local
+    ↓
+Load Balancer externe
+    ↓
+worker:30080
+    ↓
+Traefik
+    ↓
+Service ClusterIP
+    ↓
+Pods de l'application
 ```
 
 ---
 
 ## 🔍 Vérification
 
-### Vérifier que Traefik tourne
+### Vérifier les pods Traefik
 
 ```bash
 kubectl get pods -n traefik -o wide
 ```
 
-Résultat attendu :
+Attendu :
 
-```
-NAME                      READY   STATUS    NODE
-traefik-xxxxx-xxxxx       1/1     Running   ip-10-1-23-52.eu-west-1.compute.internal
-```
+- `2` pods Traefik
+- au moins `2` workers distincts
 
-### Vérifier les ports
-
-Depuis la VM ingress :
+### Vérifier le service
 
 ```bash
-sudo ss -tlnp | grep -E ':80|:443|:8080'
+kubectl get svc -n traefik
+```
+
+Attendu :
+
+```text
+NAME      TYPE       CLUSTER-IP     PORT(S)
+traefik   NodePort   <cluster-ip>   80:30080/TCP,443:30443/TCP
 ```
 
 ### Tester le routing
 
 ```bash
-# Depuis n'importe quel nœud du cluster
-curl -H "Host: traefik.kubequest.local" http://<IP_INTERNE_INGRESS>/dashboard/
-
-# Depuis l'extérieur
-curl -H "Host: traefik.kubequest.local" http://<IP_PUBLIQUE_INGRESS>/dashboard/
+curl -H "Host: traefik.kubequest.local" http://<IP_OU_DNS_LB>/dashboard/
+curl -H "Host: app.kubequest.local" http://<IP_OU_DNS_LB>/
 ```
 
 ---
@@ -236,21 +153,12 @@ curl -H "Host: traefik.kubequest.local" http://<IP_PUBLIQUE_INGRESS>/dashboard/
 ## 🛠️ Commandes utiles
 
 ```bash
-# Voir les logs Traefik
 kubectl logs -n traefik -l app.kubernetes.io/name=traefik -f
-
-# Redéployer avec de nouvelles values
-helm upgrade traefik traefik/traefik -n traefik -f values.yaml
-
-# Désinstaller Traefik
-helm uninstall traefik -n traefik
-
-# Vérifier le release Helm
+kubectl get svc -n traefik
 helm list -n traefik
 ```
 
 ---
-
 <div align="center">
 
 **Projet KubeQuest**
