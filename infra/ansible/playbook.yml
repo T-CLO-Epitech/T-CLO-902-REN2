@@ -37,6 +37,7 @@
   roles:
     - Deploy_Traefik
     - Deploy_Argocd
+    - Deploy_Dashboard
 
 - name: Deploy ArgoCD
   hosts: kube1
@@ -57,6 +58,7 @@
     - Delete_Traefik
     - Delete_Argocd
     - Delete_App
+    - Delete_Dashboard
 
 - name: Deploy Dashboard
   hosts: kube1
