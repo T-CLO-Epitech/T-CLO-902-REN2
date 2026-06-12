@@ -86,8 +86,7 @@ infra/
 │   └── roles/
 ├── docker/
 └── kube/
-ansible.cfg                    ← pointe vers .vault_pass
-.vault_pass                    ← mot de passe vault (non commité)
+ansible.cfg              
 ```
 
 ---
