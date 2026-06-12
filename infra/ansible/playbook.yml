@@ -1,4 +1,15 @@
 ---
+- name: Prepare SSH key from vault
+  hosts: localhost
+  gather_facts: false
+  tags: always
+  tasks:
+    - name: Write SSH private key to temp file
+      copy:
+        content: "{{ vault_ssh_private_key }}"
+        dest: /tmp/kubequest_deploy_key
+        mode: '0600'
+
 - name: Install containerd, Kubeadm, Kubelet and Kubectl
   hosts: all
   become: true
@@ -8,14 +19,14 @@
     - Deploy_Kube
 
 - name: Configure Master Node
-  hosts: kube1
+  hosts: controlPlane
   become: true
   tags: setup
   roles:
     - Init_Kube
 
 - name: Join Worker Nodes to Cluster
-  hosts: kube2 monitoring ingress
+  hosts: worker
   become: true
   tags: setup
   roles:
@@ -29,9 +40,11 @@
     - Config_Registry
 
 - name: Deploy Services
-  hosts: kube1
+  hosts: controlPlane
   become: true
-  tags: services
+  tags:
+    - never
+    - services
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
   roles:
@@ -40,18 +53,22 @@
     - Deploy_Dashboard
 
 - name: Deploy ArgoCD
-  hosts: kube1
+  hosts: controlPlane
   become: true
-  tags: argo
+  tags:
+    - never
+    - argo
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
   roles:
     - Deploy_Argocd
 
 - name: Delete services
-  hosts: kube1
+  hosts: controlPlane
   become: true
-  tags: delete
+  tags:
+    - never
+    - delete
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
   roles:
@@ -60,20 +77,3 @@
     - Delete_App
     - Delete_Dashboard
 
-- name: Deploy Dashboard
-  hosts: kube1
-  become: true
-  tags: dashboard
-  environment:
-    KUBECONFIG: /etc/kubernetes/admin.conf
-  roles:
-    - Deploy_Dashboard
-
-- name: Delete Dashboard
-  hosts: kube1
-  become: true
-  tags: delete
-  environment:
-    KUBECONFIG: /etc/kubernetes/admin.conf
-  roles:
-    - Delete_Dashboard

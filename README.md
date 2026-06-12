@@ -53,7 +53,7 @@ Cette organisation permet :
 
 ## 🧩 Composants principaux
 
-- **Ansible** : bootstrap cluster, join des workers, configuration registry
+- **Ansible** : bootstrap cluster, join des workers, configuration registry — clé SSH gérée via Ansible Vault
 - **Traefik** : ingress controller répliqué, exposé en `NodePort`
 - **ArgoCD** : déploiement GitOps des manifests et charts
 - **Headlamp** : dashboard Kubernetes
@@ -76,11 +76,18 @@ Cette organisation permet :
 ```text
 infra/
 ├── ansible/
-│   ├── inventory.ini
+│   ├── inventaire/
+│   │   └── inventory.ini
+│   ├── group_vars/
+│   │   └── all/
+│   │       ├── vars.yml       ← variables de connexion
+│   │       └── vault.yml      ← clé SSH chiffrée (ansible-vault)
 │   ├── playbook.yml
 │   └── roles/
 ├── docker/
 └── kube/
+ansible.cfg                    ← pointe vers .vault_pass
+.vault_pass                    ← mot de passe vault (non commité)
 ```
 
 ---
