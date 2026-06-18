@@ -1,0 +1,5 @@
+grafana:
+  adminPassword: "admin"
+
+alertmanager:
+  enabled: false
