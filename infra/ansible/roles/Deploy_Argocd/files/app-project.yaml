@@ -8,6 +8,7 @@ spec:
   sourceRepos:
     - 'https://github.com/T-CLO-Epitech/T-CLO-902-REN2-APP'
     - 'https://github.com/T-CLO-Epitech/T-CLO-902-REN2'
+    - 'https://charts.bitnami.com/bitnami'
   destinations:
     - namespace: app
       server: https://kubernetes.default.svc

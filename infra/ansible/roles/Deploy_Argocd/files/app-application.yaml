@@ -10,15 +10,28 @@ spec:
     server: https://kubernetes.default.svc
   sources:
     - repoURL: https://github.com/T-CLO-Epitech/T-CLO-902-REN2
-      targetRevision: 11-mise-en-place-des-secrets-argocd
+      targetRevision: main
       path: infra/kube/app/argocd/secrets
       directory:
         recurse: false
+
+    - repoURL: https://github.com/T-CLO-Epitech/T-CLO-902-REN2
+      targetRevision: main
+      ref: values
+
+    - repoURL: https://charts.bitnami.com/bitnami
+      chart: mysql
+      targetRevision: 14.0.3
+      helm:
+        releaseName: mysql
+        valueFiles:
+          - $values/infra/kube/app/argocd/mysql-values.yaml
 
     - repoURL: https://github.com/T-CLO-Epitech/T-CLO-902-REN2-APP
       targetRevision: main
       path: sample-app-master/helm/app
       helm:
+        releaseName: app
         valueFiles:
           - values.yaml
   syncPolicy:
