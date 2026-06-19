@@ -42,6 +42,7 @@
 - name: Deploy Services
   hosts: controlPlane
   become: true
+  gather_facts: false
   tags:
     - never
     - services
@@ -55,6 +56,7 @@
 - name: Deploy ArgoCD
   hosts: controlPlane
   become: true
+  gather_facts: false
   tags:
     - never
     - argo
@@ -66,6 +68,7 @@
 - name: Deploy Monitoring
   hosts: controlPlane
   become: true
+  gather_facts: false
   tags:
     - never
     - monitoring
@@ -77,6 +80,7 @@
 - name: Deploy Loki
   hosts: controlPlane
   become: true
+  gather_facts: false
   tags:
     - never
     - loki
@@ -85,9 +89,34 @@
   roles:
     - Deploy_Loki
 
+- name: Delete Monitoring
+  hosts: controlPlane
+  become: true
+  gather_facts: false
+  tags:
+    - never
+    - delete-monitoring
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  roles:
+    - Delete_Monitoring
+
+- name: Delete Loki
+  hosts: controlPlane
+  become: true
+  gather_facts: false
+  tags:
+    - never
+    - delete-loki
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  roles:
+    - Delete_Loki
+
 - name: Delete services
   hosts: controlPlane
   become: true
+  gather_facts: false
   tags:
     - never
     - delete

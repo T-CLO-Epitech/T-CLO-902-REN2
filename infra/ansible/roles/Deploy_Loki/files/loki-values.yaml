@@ -20,6 +20,12 @@ singleBinary:
   replicas: 1
   persistence:
     enabled: false
+  extraVolumes:
+    - name: loki-storage
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: loki-storage
+      mountPath: /var/loki
 
 chunksCache:
   enabled: false
