@@ -74,6 +74,17 @@
   roles:
     - Deploy_Monitoring
 
+- name: Deploy Loki
+  hosts: controlPlane
+  become: true
+  tags:
+    - never
+    - loki
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  roles:
+    - Deploy_Loki
+
 - name: Delete services
   hosts: controlPlane
   become: true
