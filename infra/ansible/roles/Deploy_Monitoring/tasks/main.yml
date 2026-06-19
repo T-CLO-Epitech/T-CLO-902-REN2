@@ -1,0 +1,31 @@
+---
+- name: Copy kube-prometheus-stack values
+  copy:
+    src: values.yaml
+    dest: /tmp/monitoring-values.yaml
+
+- name: Add prometheus-community Helm repo
+  kubernetes.core.helm_repository:
+    name: prometheus-community
+    repo_url: https://prometheus-community.github.io/helm-charts
+
+- name: Copy Grafana IngressRoute
+  copy:
+    src: ingressroute.yaml
+    dest: /tmp/monitoring-ingressroute.yaml
+
+- name: Deploy kube-prometheus-stack
+  kubernetes.core.helm:
+    name: monitoring
+    chart_ref: prometheus-community/kube-prometheus-stack
+    release_namespace: monitoring
+    create_namespace: true
+    values_files:
+      - /tmp/monitoring-values.yaml
+    wait: true
+    wait_timeout: 5m
+
+- name: Apply Grafana IngressRoute
+  kubernetes.core.k8s:
+    src: /tmp/monitoring-ingressroute.yaml
+    state: present

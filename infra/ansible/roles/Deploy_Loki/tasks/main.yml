@@ -1,0 +1,36 @@
+---
+- name: Copy Loki values
+  copy:
+    src: loki-values.yaml
+    dest: /tmp/loki-values.yaml
+
+- name: Copy Promtail values
+  copy:
+    src: promtail-values.yaml
+    dest: /tmp/promtail-values.yaml
+
+- name: Add Grafana Helm repo
+  kubernetes.core.helm_repository:
+    name: grafana
+    repo_url: https://grafana.github.io/helm-charts
+
+- name: Deploy Loki
+  kubernetes.core.helm:
+    name: loki
+    chart_ref: grafana/loki
+    release_namespace: monitoring
+    create_namespace: true
+    values_files:
+      - /tmp/loki-values.yaml
+    wait: true
+    wait_timeout: 5m
+
+- name: Deploy Promtail
+  kubernetes.core.helm:
+    name: promtail
+    chart_ref: grafana/promtail
+    release_namespace: monitoring
+    values_files:
+      - /tmp/promtail-values.yaml
+    wait: true
+    wait_timeout: 5m
