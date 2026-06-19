@@ -13,5 +13,11 @@ setup-monitoring:
 setup-loki:
 	ansible-playbook -i ./infra/ansible/inventory.ini ./infra/ansible/playbook.yml --tags loki
 
+delete-monitoring:
+	ansible-playbook -i ./infra/ansible/inventory.ini ./infra/ansible/playbook.yml --tags delete-monitoring
+
+delete-loki:
+	ansible-playbook -i ./infra/ansible/inventory.ini ./infra/ansible/playbook.yml --tags delete-loki
+
 delete:
 	ansible-playbook -i ./infra/ansible/inventory.ini ./infra/ansible/playbook.yml --tags delete

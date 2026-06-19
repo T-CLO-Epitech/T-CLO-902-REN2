@@ -1,0 +1,17 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for Delete_Monitoring
+- name: Delete Grafana IngressRoute
+  kubernetes.core.k8s:
+    api_version: traefik.io/v1alpha1
+    kind: IngressRoute
+    name: grafana
+    namespace: monitoring
+    state: absent
+
+- name: Uninstall kube-prometheus-stack Helm release
+  kubernetes.core.helm:
+    name: monitoring
+    release_namespace: monitoring
+    state: absent
+    wait: true
