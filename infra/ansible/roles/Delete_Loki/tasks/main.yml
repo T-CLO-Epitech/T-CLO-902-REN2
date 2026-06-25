@@ -8,6 +8,7 @@
     release_namespace: monitoring
     state: absent
     wait: true
+  failed_when: false
 
 - name: Uninstall Loki Helm release
   kubernetes.core.helm:
@@ -15,6 +16,7 @@
     release_namespace: monitoring
     state: absent
     wait: true
+  failed_when: false
 
 - name: Delete monitoring namespace
   kubernetes.core.k8s:
