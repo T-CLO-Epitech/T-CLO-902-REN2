@@ -1,18 +1,9 @@
-# deployment:
-#   replicas: 2
+deployment:
+  kind: DaemonSet
 
-affinity:
-  podAntiAffinity:
-    requiredDuringSchedulingIgnoredDuringExecution:
-      - labelSelector:
-          matchLabels:
-            app.kubernetes.io/name: traefik
-            app.kubernetes.io/instance: traefik
-        topologyKey: kubernetes.io/hostname
-
-podDisruptionBudget:
-  enabled: true
-  minAvailable: 1
+tolerations:
+  - operator: Exists
+    effect: NoSchedule
 
 service:
   enabled: true

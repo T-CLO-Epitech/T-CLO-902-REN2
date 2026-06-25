@@ -35,3 +35,32 @@
   kubernetes.core.k8s:
     src: /tmp/headlamp-ingressroute.yaml
     state: present
+
+- name: Copy Headlamp ServiceAccount manifest
+  copy:
+    src: serviceaccount.yaml
+    dest: /tmp/headlamp-serviceaccount.yaml
+
+- name: Apply Headlamp ServiceAccount and token
+  kubernetes.core.k8s:
+    src: /tmp/headlamp-serviceaccount.yaml
+    state: present
+
+- name: Wait for token to be populated
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: headlamp-admin-token
+    namespace: dashboard
+  register: headlamp_secret
+  until: headlamp_secret.resources[0].data.token is defined
+  retries: 10
+  delay: 3
+
+- name: Display Headlamp token
+  debug:
+    msg: |
+      ============================================================
+       HEADLAMP TOKEN — colle ce token dans l'UI Headlamp
+      ============================================================
+      {{ headlamp_secret.resources[0].data.token | b64decode }}
+      ============================================================
