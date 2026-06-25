@@ -28,6 +28,10 @@ singleBinary:
       emptyDir: {}
   extraVolumeMounts:
     - name: data
+    - name: loki-storage
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: loki-storage
       mountPath: /var/loki
 
 chunksCache:

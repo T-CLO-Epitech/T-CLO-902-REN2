@@ -15,3 +15,9 @@
     release_namespace: monitoring
     state: absent
     wait: true
+
+- name: Delete monitoring namespace
+  kubernetes.core.k8s:
+    kind: Namespace
+    name: monitoring
+    state: absent

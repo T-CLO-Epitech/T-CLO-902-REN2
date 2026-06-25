@@ -2,6 +2,7 @@
 ---
 # tasks file for Delete_Monitoring
 
+
 - name: Delete Grafana IngressRoute
   kubernetes.core.k8s:
     kind: IngressRoute
