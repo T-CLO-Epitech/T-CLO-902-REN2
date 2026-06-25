@@ -1,0 +1,17 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for Delete_Loki
+
+- name: Uninstall Promtail Helm release
+  kubernetes.core.helm:
+    name: promtail
+    release_namespace: monitoring
+    state: absent
+    wait: true
+
+- name: Uninstall Loki Helm release
+  kubernetes.core.helm:
+    name: loki
+    release_namespace: monitoring
+    state: absent
+    wait: true
