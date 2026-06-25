@@ -1,0 +1,36 @@
+fullnameOverride: mysql
+
+commonAnnotations:
+  argocd.argoproj.io/sync-wave: "-1"
+
+architecture: standalone
+
+auth:
+  existingSecret: app-secrets
+  createDatabase: true
+  database: app_database
+  username: app_user
+
+primary:
+  persistence:
+    enabled: true
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: workload
+                operator: In
+                values:
+                  - general
+
+metrics:
+  enabled: false
