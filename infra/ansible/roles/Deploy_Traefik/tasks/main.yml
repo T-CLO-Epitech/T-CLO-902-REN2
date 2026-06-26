@@ -16,6 +16,20 @@
     name: traefik
     repo_url: https://traefik.github.io/charts
 
+- name: Check if Traefik Helm release is healthy
+  shell: helm status traefik -n traefik 2>/dev/null | grep '^STATUS:' | grep -c 'deployed'
+  register: traefik_helm_healthy
+  failed_when: false
+  changed_when: false
+
+- name: Uninstall failed or orphan Traefik Helm release
+  shell: helm uninstall traefik -n traefik 2>/dev/null || true
+  when: traefik_helm_healthy.stdout | int == 0
+
+- name: Delete Traefik namespace to ensure clean state
+  shell: kubectl delete namespace traefik --ignore-not-found=true
+  when: traefik_helm_healthy.stdout | int == 0
+
 - name: Deploy Traefik
   kubernetes.core.helm:
     name: traefik
@@ -24,4 +38,7 @@
     create_namespace: true
     values_files:
       - /tmp/traefik-values.yaml
-    wait: true
+    wait: false
+
+- name: Wait for Traefik DaemonSet to be ready
+  shell: kubectl rollout status daemonset/traefik -n traefik --timeout=300s

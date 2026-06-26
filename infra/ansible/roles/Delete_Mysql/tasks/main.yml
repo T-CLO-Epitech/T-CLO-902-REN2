@@ -1,0 +1,38 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Delete MySQL StatefulSet
+  kubernetes.core.k8s:
+    api_version: apps/v1
+    kind: StatefulSet
+    name: mysql
+    namespace: "{{ mysql_namespace }}"
+    state: absent
+  failed_when: false
+
+- name: Delete mysql namespace
+  kubernetes.core.k8s:
+    kind: Namespace
+    name: "{{ mysql_namespace }}"
+    state: absent
+  failed_when: false
+
+- name: Delete PV
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: PersistentVolume
+    name: mysql-pv
+    state: absent
+  failed_when: false
+
+- name: Delete StorageClass
+  kubernetes.core.k8s:
+    api_version: storage.k8s.io/v1
+    kind: StorageClass
+    name: mysql-local
+    state: absent
+  failed_when: false
+
+- name: Remove MySQL data directory from control plane
+  file:
+    path: "{{ mysql_data_dir }}"
+    state: absent
