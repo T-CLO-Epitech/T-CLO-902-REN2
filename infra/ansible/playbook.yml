@@ -50,10 +50,12 @@
     KUBECONFIG: /etc/kubernetes/admin.conf
   roles:
     - Deploy_Traefik
+    - Deploy_Mysql
     - Deploy_Argocd
     - Deploy_Dashboard
     - Deploy_Monitoring
     - Deploy_Loki
+  
 
 - name: Deploy ArgoCD
   hosts: controlPlane
@@ -107,4 +109,5 @@
     - Delete_Dashboard
     - Delete_Loki
     - Delete_Monitoring
+    - Delete_Mysql
 

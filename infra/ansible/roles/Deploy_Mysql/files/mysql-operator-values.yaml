@@ -1,0 +1,22 @@
+image:
+  registry: docker.io
+  repository: mysql
+  tag: 8.4.5
+
+auth:
+  rootPassword: "kubequest"
+  database: kubequest
+  username: kubequest
+  password: "kubequest"
+
+primary:
+  persistence:
+    storageClass: mysql-local
+    size: 10Gi
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+    - key: node-role.kubernetes.io/master
+      operator: Exists
+      effect: NoSchedule

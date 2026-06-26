@@ -1,0 +1,54 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Create MySQL data directory on control plane
+  file:
+    path: "{{ mysql_data_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Create mysql namespace
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    name: "{{ mysql_namespace }}"
+    state: present
+
+- name: Copy StorageClass manifest
+  copy:
+    src: storageclass.yaml
+    dest: /tmp/mysql-storageclass.yaml
+
+- name: Apply StorageClass
+  kubernetes.core.k8s:
+    src: /tmp/mysql-storageclass.yaml
+    state: present
+
+- name: Render PV manifest
+  template:
+    src: pv.yaml.j2
+    dest: /tmp/mysql-pv.yaml
+
+- name: Apply PV
+  kubernetes.core.k8s:
+    src: /tmp/mysql-pv.yaml
+    state: present
+
+- name: Copy PVC manifest
+  copy:
+    src: mysql-pvc.yaml
+    dest: /tmp/mysql-pvc.yaml
+
+- name: Apply PVC
+  kubernetes.core.k8s:
+    src: /tmp/mysql-pvc.yaml
+    state: present
+
+- name: Copy MySQL StatefulSet manifest
+  copy:
+    src: mysql.yaml
+    dest: /tmp/mysql.yaml
+
+- name: Apply MySQL StatefulSet
+  kubernetes.core.k8s:
+    src: /tmp/mysql.yaml
+    state: present
