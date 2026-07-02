@@ -11,13 +11,7 @@ spec:
   sources:
     - repoURL: https://github.com/T-CLO-Epitech/T-CLO-902-REN2
       targetRevision: main
-      path: infra/kube/app/argocd/secrets/nexus-registry.yaml
-      directory:
-        recurse: false
-    
-    - repoURL: https://github.com/T-CLO-Epitech/T-CLO-902-REN2
-      targetRevision: main
-      path: infra/kube/app/argocd/secrets/app-secrets.yaml
+      path: infra/kube/app/argocd/secrets
       directory:
         recurse: false
 
