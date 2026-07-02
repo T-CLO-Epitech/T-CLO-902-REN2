@@ -10,7 +10,7 @@ spec:
     server: https://kubernetes.default.svc
   sources:
     - repoURL: https://github.com/T-CLO-Epitech/T-CLO-902-REN2
-      targetRevision: main
+      targetRevision: 36-déploiment-de-mysql-operator
       path: infra/kube/app/argocd/secrets
       directory:
         recurse: false
